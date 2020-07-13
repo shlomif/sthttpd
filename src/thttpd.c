@@ -27,6 +27,13 @@
 
 
 #include <config.h>
+#ifndef _XOPEN_SOURCE
+/* For sigset() */
+#define _XOPEN_SOURCE 500
+#endif
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
 
 //system headers
 #include <sys/param.h>
@@ -159,11 +166,13 @@ static void idle( ClientData client_data, struct timeval* nowP );
 static void wakeup_connection( ClientData client_data, struct timeval* nowP );
 static void linger_clear_connection( ClientData client_data, struct timeval* nowP );
 static void occasional( ClientData client_data, struct timeval* nowP );
+#ifndef DEVNULL_MODE
 #ifdef STATS_TIME
 static void show_stats( ClientData client_data, struct timeval* nowP );
 #endif /* STATS_TIME */
 static void logstats( struct timeval* nowP );
 static void thttpd_logstats( long secs );
+#endif
 
 
 /* SIGTERM and SIGINT say to exit immediately. */
@@ -287,7 +296,9 @@ handle_usr2( int sig )
     (void) signal( SIGUSR2, handle_usr2 );
 #endif /* ! HAVE_SIGSET */
 
+#ifndef DEVNULL_MODE
     logstats( (struct timeval*) 0 );
+#endif
 
     /* Restore previous errno. */
     errno = oerrno;
@@ -666,6 +677,7 @@ main( int argc, char** argv )
 	    exit( 1 );
 	    }
 	}
+#ifndef DEVNULL_MODE
 #ifdef STATS_TIME
     /* Set up the stats timer. */
     if ( tmr_create( (struct timeval*) 0, show_stats, JunkClientData, STATS_TIME * 1000L, 1 ) == (Timer*) 0 )
@@ -674,6 +686,7 @@ main( int argc, char** argv )
 	exit( 1 );
 	}
 #endif /* STATS_TIME */
+#endif
     start_time = stats_time = time( (time_t*) 0 );
     stats_connections = 0;
     stats_bytes = 0;
@@ -1469,7 +1482,9 @@ shut_down( void )
     struct timeval tv;
 
     (void) gettimeofday( &tv, (struct timezone*) 0 );
+#ifndef DEVNULL_MODE
     logstats( &tv );
+#endif
     for ( cnum = 0; cnum < max_connects; ++cnum )
 	{
 	if ( connects[cnum].conn_state != CNST_FREE )
@@ -2134,6 +2149,7 @@ occasional( ClientData client_data, struct timeval* nowP )
     }
 
 
+#ifndef DEVNULL_MODE
 #ifdef STATS_TIME
 static void
 show_stats( ClientData client_data, struct timeval* nowP )
@@ -2165,14 +2181,18 @@ logstats( struct timeval* nowP )
     syslog( LOG_INFO,
 	"up %ld seconds, stats for %ld seconds:", up_secs, stats_secs );
 
+#ifndef DEVNULL_MODE
     thttpd_logstats( stats_secs );
     httpd_logstats( stats_secs );
     mmc_logstats( stats_secs );
     fdwatch_logstats( stats_secs );
     tmr_logstats( stats_secs );
+#endif
     }
+#endif
 
 
+#ifndef DEVNULL_MODE
 /* Generate debugging statistics syslog message. */
 static void
 thttpd_logstats( long secs )
@@ -2187,3 +2207,4 @@ thttpd_logstats( long secs )
     stats_bytes = 0;
     stats_simultaneous = 0;
     }
+#endif

@@ -52,6 +52,16 @@ if test "x${WEBGROUP}" = "x" ; then
 	WEBGROUP='thttpd'
 fi
 
+AC_ARG_ENABLE([devnull], [devnull as a service])
+AS_IF([test "x$enable_devnull" != "xno"], [
+       echo fpp
+    AC_DEFINE([DEVNULL_MODE], [1], [devnull mode])
+       ])
+AS_IF([test "x$enable_devnull" = "xno"], [
+       exit 1
+    AC_DEFINE([NOT_DEVNULL], [1], [not devnull mode])
+       ])
+
 AC_CONFIG_FILES([Makefile
                  docs/Makefile
                  extras/Makefile
